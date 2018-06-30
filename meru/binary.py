@@ -97,6 +97,9 @@ class BinaryReader:
     def length(self):
         return self._length
 
+    def pos(self):
+        return self._index
+
     def remaining(self):
         return self._length - self._index
 
@@ -113,7 +116,7 @@ class BinaryReader:
         if to_read == 0:
             return bytes()
         else:
-            _read = self.bytes[self._index:self._index + to_read]
+            _read = self._bytes[self._index:self._index + to_read]
             self.move(to_read)
             return _read
 
@@ -196,7 +199,7 @@ class BinaryReader:
     def read_string(self, length, encoding=None):
         if encoding is None:
             encoding = "utf-8"
-        return self.strict_read(length).encode(encoding)
+        return self.strict_read(length).decode(encoding)
 
     def read_prefixed_string_int8(self, encoding=None):
         length = self.read_int8()
