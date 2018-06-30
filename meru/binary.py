@@ -205,34 +205,34 @@ class BinaryReader:
         length = self.read_int8()
         return self.read_string(length, encoding)
 
-    def read_prefixed_string_int16(self, encoding=None, endianness=None):
+    def read_prefixed_string_int16(self, endianness=None, encoding=None):
         return self._read_prefixed_string(self.read_int16,
-            encoding, endianness)
+            endianness, encoding)
 
-    def read_prefixed_string_int32(self, encoding=None, endianness=None):
+    def read_prefixed_string_int32(self, endianness=None, encoding=None):
         return self._read_prefixed_string(self.read_int32,
-            encoding, endianness)
+            endianness, encoding)
 
-    def read_prefixed_string_int64(self, encoding=None, endianness=None):
+    def read_prefixed_string_int64(self, endianness=None, encoding=None):
         return self._read_prefixed_string(self.read_int64,
-            encoding, endianness)
+            endianness, encoding)
 
     def read_prefixed_string_uint8(self, encoding=None):
         length = self.read_uint8()
         return self.read_string(length, encoding)
 
-    def read_prefixed_string_uint16(self, encoding=None, endianness=None):
+    def read_prefixed_string_uint16(self, endianness=None, encoding=None):
         return self._read_prefixed_string(self.read_uint16,
-            encoding, endianness)
+            endianness, encoding)
 
-    def read_prefixed_string_uint32(self, encoding=None, endianness=None):
+    def read_prefixed_string_uint32(self, endianness=None, encoding=None):
         return self._read_prefixed_string(self.read_uint32,
-            encoding, endianness)
+            endianness, encoding)
 
-    def read_prefixed_string_uint64(self, encoding=None, endianness=None):
+    def read_prefixed_string_uint64(self, endianness=None, encoding=None):
         return self._read_prefixed_string(self.read_uint64,
-            encoding, endianness)
+            endianness, encoding)
 
-    def _read_prefixed_string(self, read_func, encoding, endianness):
+    def _read_prefixed_string(self, read_func, endianness, encoding):
         length = read_func(endianness)
         return self.read_string(length, encoding)
