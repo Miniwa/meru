@@ -41,31 +41,29 @@ def header(filenames):
 
 @main.command()
 @click.argument("filenames", type=click.Path(exists=True), nargs=-1)
-def mesh(filenames):
+def meshes(filenames):
     for filename in filenames:
         parser = C3bParser.from_file(filename)
         if not parser.verify_signature():
             print("ERROR: {0} is not a c3b file.".format(filename))
             continue
 
-        mesh = parser.read_mesh(0)
+        meshes = parser.read_meshes(0)
         print("File: {0}".format(filename))
-        print("VertexArrayCount: {0}".format(len(mesh.vertex_arrays)))
-        for vertex_array in mesh.vertex_arrays:
+        print("MeshCount: {0}".format(len(meshes)))
+        for mesh in meshes:
             print()
-            print("VertexCount: {0}".format(vertex_array.vertex_count()))
-            print("AttributeCount: {0}".format(len(vertex_array.attributes)))
-            for attribute in vertex_array.attributes:
+            print("ID: {0}".format(mesh.id))
+            print("VertexCount: {0}".format(mesh.vertex_array.vertex_count()))
+            print("IndexCount: {0}".format(len(mesh.indices)))
+            print("AttributeCount: {0}".format(
+                len(mesh.vertex_array.attributes)))
+            for attribute in mesh.vertex_array.attributes:
                 print()
                 print("Name: {0}".format(attribute.name))
                 print("Type: {0}".format(attribute.type))
                 print("NrValues: {0}".format(attribute.nr_values))
             print()
-            print("ShapeCount: {0}".format(len(vertex_array.shapes)))
-            for shape in vertex_array.shapes:
-                print()
-                print("ID: {0}".format(shape.id))
-                print("IndexCount: {0}".format(len(shape.indices)))
 
 
 @main.command()
@@ -76,6 +74,7 @@ def materials(filenames):
         materials = parser.read_materials(0)
         print(materials)
 
+
 @main.command()
 @click.argument("filenames", type=click.Path(exists=True), nargs=-1)
 def nodes(filenames):
@@ -85,5 +84,5 @@ def nodes(filenames):
         print(nodes)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

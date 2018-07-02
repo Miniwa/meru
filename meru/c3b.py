@@ -1,6 +1,6 @@
 from enum import Enum
 from binary import BinaryReader, Endian
-from linear import Mat44
+from linear import Mat44, Vec4, Vec3, Vec2
 
 C3B_SIGNATURE = "C3B\0"
 C3B_SIGNATURE_LENGTH = 4
@@ -21,7 +21,7 @@ class C3bType(Enum):
     EFFECT = 18
     CAMERA = 32
     LIGHT = 33
-    MESH = 34
+    MESHES = 34
     MESH_PART = 35
     MESH_SKIN = 36
 
@@ -43,8 +43,11 @@ class C3bHeader:
 
 
 class C3bMesh:
-    def __init__(self):
-        self.vertex_arrays = []
+    def __init__(self, _id, vertex_array):
+        self.id = _id
+        self.vertex_array = vertex_array
+        self.indices = []
+        self.aabb = []
 
 
 class C3bVertexArray:
@@ -56,25 +59,70 @@ class C3bVertexArray:
     def values_per_vertex(self):
         value_count = 0
         for attrib in self.attributes:
-            value_count += attrib.nr_values
+            value_count += attrib.value_count
         return value_count
 
     def vertex_count(self):
-        return len(self.values) / self.values_per_vertex()
+        return int(len(self.values) / self.values_per_vertex())
+
+    def get_attribute_vertices(self, attrib_name):
+        value_offset = 0
+        for attrib in self.attributes:
+            if attrib.name == attrib_name:
+                matched_attrib = attrib
+                break
+            else:
+                value_offset += attrib.value_count
+        else:
+            raise ValueError("No attribute named {0}.".format(attrib_name))
+
+        attrib_vertices = []
+        stride = self.values_per_vertex()
+        for i in range(0, len(self.values), stride):
+            _offset = i + value_offset
+            vertex = self.values[_offset: _offset + matched_attrib.value_count]
+            attrib_vertices.append(tuple(vertex))
+
+        assert len(attrib_vertices) == int(self.vertex_count())
+        return attrib_vertices
+
+    def get_positions(self):
+        return self._get_vec3("VERTEX_ATTRIB_POSITION")
+
+    def get_normals(self):
+        return self._get_vec3("VERTEX_ATTRIB_NORMAL")
+
+    def get_uvs(self):
+        uvs = []
+        for vertex in self.get_attribute_vertices("VERTEX_ATTRIB_TEX_COORD"):
+            uvs.append(Vec2(vertex[0], vertex[1]))
+        return uvs
+
+    def get_blend_weights(self):
+        return self._get_vec4("VERTEX_ATTRIB_BLEND_WEIGHT")
+
+    def get_blend_index(self):
+        return self._get_vec4("VERTEX_ATTRIB_BLEND_INDEX")
+
+    def _get_vec3(self, attrib_name):
+        attrib_vertices = []
+        for vertex in self.get_attribute_vertices(attrib_name):
+            attrib_vertices.append(Vec3(vertex[0], vertex[1], vertex[2]))
+        return attrib_vertices
+
+    def _get_vec4(self, attrib_name):
+        attrib_vertices = []
+        for vertex in self.get_attribute_vertices(attrib_name):
+            attrib_vertices.append(Vec4(vertex[0], vertex[1],
+                vertex[2], vertex[3]))
+        return attrib_vertices
 
 
 class C3bVertexAttribute:
-    def __init__(self, nr_values, _type, name):
-        self.nr_values = nr_values
+    def __init__(self, value_count, _type, name):
+        self.value_count = value_count
         self.type = _type
         self.name = name
-
-
-class C3bShape:
-    def __init__(self, _id):
-        self.id = _id
-        self.indices = []
-        self.aabb = []
 
 
 class C3bMaterial:
@@ -144,9 +192,9 @@ class C3bParser:
             references.append(C3bReference(_id, C3bType(_type), offset))
         return C3bHeader(major_version, minor_version, references)
 
-    def read_mesh(self, index):
-        self.seek_type(C3bType.MESH, index)
-        mesh = C3bMesh()
+    def read_meshes(self, index):
+        self.seek_type(C3bType.MESHES, index)
+        meshes = []
 
         # Read vertex arrays
         vertex_arr_count = self._read_uint()
@@ -168,25 +216,24 @@ class C3bParser:
                 vertex_value = self._reader.read_float32(self.endianness)
                 vertex_array.values.append(vertex_value)
 
-            # Read shapes
-            shape_count = self._read_uint()
-            for shape_index in range(shape_count):
+            # Read meshes
+            mesh_count = self._read_uint()
+            for mesh_index in range(mesh_count):
                 _id = self._read_string()
-                shape = C3bShape(_id)
+                mesh = C3bMesh(_id, vertex_array)
 
                 # Read indices
                 index_count = self._read_uint()
                 for i in range(index_count):
                     _index = self._reader.read_uint16(self.endianness)
-                    shape.indices.append(_index)
+                    mesh.indices.append(_index)
 
                 # Read axis aligned bounding box
                 for aabb in range(6):
                     aabb_coord = self._reader.read_float32(Endian.LITTLE)
-                    shape.aabb.append(aabb_coord)
-                vertex_array.shapes.append(shape)
-            mesh.vertex_arrays.append(vertex_array)
-        return mesh
+                    mesh.aabb.append(aabb_coord)
+            meshes.append(mesh)
+        return meshes
 
     def read_materials(self, index):
         self.seek_type(C3bType.MATERIALS, index)
