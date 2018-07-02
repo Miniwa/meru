@@ -1,5 +1,6 @@
 from enum import Enum
 from binary import BinaryReader, Endian
+from linear import Mat44
 
 C3B_SIGNATURE = "C3B\0"
 C3B_SIGNATURE_LENGTH = 4
@@ -11,7 +12,7 @@ class C3bError(Exception):
 
 class C3bType(Enum):
     SCENE = 1
-    NODE = 2
+    NODES = 2
     ANIMATIONS = 3
     ANIMATION = 4
     ANIMATION_CHANNEL = 5
@@ -89,6 +90,28 @@ class C3bTexture:
         self.type = _type
         self.wrap_u = wrap_u
         self.wrap_v = wrap_v
+
+
+class C3bNode:
+    def __init__(self, _id, is_skeleton, transform):
+        self.id = _id
+        self.is_skeleton = is_skeleton
+        self.transform = transform
+        self.parts = []
+        self.children = []
+
+
+class C3bNodePart:
+    def __init__(self, shape_id, material_id):
+        self.shape_id = shape_id
+        self.material_id = material_id
+        self.bones = []
+
+
+class C3bBone:
+    def __init__(self, name, inv_bind_pos):
+        self.name = name
+        self.inv_bind_pos = inv_bind_pos
 
 
 class C3bParser:
@@ -195,6 +218,48 @@ class C3bParser:
             materials.append(material)
         return materials
 
+    def read_nodes(self, index):
+        self.seek_type(C3bType.NODES, index)
+
+        nodes = []
+        node_count = self._read_uint()
+        for i in range(node_count):
+            nodes.append(self._read_node(node_count == 1))
+        return nodes
+
+    def _read_node(self, single_sprite):
+        _id = self._read_string()
+        is_skeleton = self._reader.read_bool()
+        transform = self._read_mat44()
+
+        node = C3bNode(_id, is_skeleton, transform)
+        part_count = self._read_uint()
+        for part_index in range(part_count):
+            shape_id = self._read_string()
+            material_id = self._read_string()
+            node_part = C3bNodePart(shape_id, material_id)
+
+            bone_count = self._read_uint()
+            for bone_index in range(bone_count):
+                bone_name = self._read_string()
+                inv_bind_pos = self._read_mat44()
+                bone = C3bBone(bone_name, inv_bind_pos)
+                node_part.bones.append(bone)
+
+            uv_map_count = self._read_uint()
+            for uv_map_index in range(uv_map_count):
+                texture_index_count = self._read_uint()
+                for texture_index in range(texture_index_count):
+                    # Skip
+                    self._read_uint()
+            node.parts.append(node_part)
+
+        child_count = self._read_uint()
+        for child_index in range(child_count):
+            child = self._read_node(single_sprite)
+            node.children.append(child)
+        return node
+
     def seek_type(self, _type, index):
         refs = self.read_header().references
         filtered = list(filter(lambda ref: ref.type == _type, refs))
@@ -211,3 +276,9 @@ class C3bParser:
 
     def _read_string(self):
         return self._reader.read_prefixed_string_uint32(self.endianness)
+
+    def _read_mat44(self):
+        values = []
+        for i in range(16):
+            values.append(self._reader.read_float32(self.endianness))
+        return Mat44(values)

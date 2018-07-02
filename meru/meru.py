@@ -76,6 +76,14 @@ def materials(filenames):
         materials = parser.read_materials(0)
         print(materials)
 
+@main.command()
+@click.argument("filenames", type=click.Path(exists=True), nargs=-1)
+def nodes(filenames):
+    for filename in filenames:
+        parser = C3bParser.from_file(filename)
+        nodes = parser.read_nodes(0)
+        print(nodes)
+
 
 if __name__ == '__main__':
     main()
