@@ -83,12 +83,12 @@ class C3bMaterial:
 
 
 class C3bTexture:
-    def __init__(self, _id, filename, _type, wrap_s, wrap_t):
+    def __init__(self, _id, filename, _type, wrap_u, wrap_v):
         self.id = _id
         self.filename = filename
         self.type = _type
-        self.wrap_s = wrap_s
-        self.wrap_t = wrap_t
+        self.wrap_u = wrap_u
+        self.wrap_v = wrap_v
 
 
 class C3bParser:
@@ -187,10 +187,10 @@ class C3bParser:
                 self._reader.read(4 * 4)
 
                 texture_type = self._read_string()
-                texture_wrap_s = self._read_string()
-                texture_wrap_t = self._read_string()
+                texture_wrap_u = self._read_string()
+                texture_wrap_v = self._read_string()
                 texture = C3bTexture(texture_id, texture_filename,
-                    texture_type, texture_wrap_s, texture_wrap_t)
+                    texture_type, texture_wrap_u, texture_wrap_v)
                 material.textures.append(texture)
             materials.append(material)
         return materials
