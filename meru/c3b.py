@@ -1,6 +1,5 @@
-from enum import Enum
-from binary import BinaryReader, Endian
-from linear import Mat44, Vec4, Vec3, Vec2
+from .binary import BinaryReader, Endian
+from .linear import Mat44, Vec4, Vec3, Vec2
 
 C3B_SIGNATURE = "C3B\0"
 C3B_SIGNATURE_LENGTH = 4
@@ -10,7 +9,7 @@ class C3bError(Exception):
     pass
 
 
-class C3bType(Enum):
+class C3bType:
     SCENE = 1
     NODES = 2
     ANIMATIONS = 3
@@ -24,6 +23,14 @@ class C3bType(Enum):
     MESHES = 34
     MESH_PART = 35
     MESH_SKIN = 36
+    TYPES = [
+        SCENE, NODES, ANIMATIONS, ANIMATION, ANIMATION_CHANNEL, MODEL,
+        MATERIALS, EFFECT, CAMERA, LIGHT, MESHES, MESH_PART, MESH_SKIN
+    ]
+
+    @classmethod
+    def is_valid(self, value):
+        return value in self.TYPES
 
 
 class C3bReference:
@@ -188,8 +195,10 @@ class C3bParser:
         for i in range(reference_count):
             _id = self._read_string()
             _type = self._read_uint()
+            if not C3bType.is_valid(_type):
+                raise ValueError("Invalid reference type {0}.".format(_type))
             offset = self._read_uint()
-            references.append(C3bReference(_id, C3bType(_type), offset))
+            references.append(C3bReference(_id, _type, offset))
         return C3bHeader(major_version, minor_version, references)
 
     def read_meshes(self, index):

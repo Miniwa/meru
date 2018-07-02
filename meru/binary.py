@@ -1,9 +1,8 @@
 import sys
 import struct
-from enum import Enum
 
 
-class Endian(Enum):
+class Endian:
     LITTLE = 1
     BIG = 2
     NATIVE = LITTLE if sys.byteorder == "little" else BIG

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import click
-from c3b import C3bParser
+from .c3b import C3bParser
 
 
 CONTEXT_SETTINGS = {
@@ -33,7 +33,7 @@ def header(filenames):
 
         for ref in header.references:
             print("ID: {0}".format(ref.id))
-            print("Type: {0}".format(ref.type.name))
+            print("Type: {0}".format(ref.type))
             print("Offset: {0}".format(ref.offset))
             print()
         print()
@@ -62,7 +62,7 @@ def meshes(filenames):
                 print()
                 print("Name: {0}".format(attribute.name))
                 print("Type: {0}".format(attribute.type))
-                print("NrValues: {0}".format(attribute.nr_values))
+                print("ValueCount: {0}".format(attribute.value_count))
             print()
 
 
