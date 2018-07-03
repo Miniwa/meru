@@ -48,14 +48,14 @@ def c3b_load_model(data, models):
             mesh.normals.append(c3b_to_vec3(_normal))
 
         print("Adding weights..")
-        _blend_indices = _mesh.vertex_array.get_blend_index()
+        _blend_indices = _mesh.vertex_array.get_blend_indices()
         _blend_weights = _mesh.vertex_array.get_blend_weights()
         assert len(_blend_indices) == len(_blend_weights)
         for i in range(len(_blend_weights)):
             _index = _blend_indices[i]
             _weight = _blend_weights[i]
-            #mesh.weights.append(
-            #    NoeVertWeight(_index.unpack(), _weight.unpack()))
+            mesh.weights.append(
+                NoeVertWeight(_index.unpack(), _weight.unpack()))
         meshes.append(mesh)
 
     print("Creating model..")

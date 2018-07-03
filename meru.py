@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import click
-from .c3b import C3bParser
+from meru.c3b import C3bParser
 
 
 CONTEXT_SETTINGS = {
@@ -52,6 +52,7 @@ def meshes(filenames):
         print("File: {0}".format(filename))
         print("MeshCount: {0}".format(len(meshes)))
         for mesh in meshes:
+            indices = mesh.vertex_array.get_blend_indices()
             print()
             print("ID: {0}".format(mesh.id))
             print("VertexCount: {0}".format(mesh.vertex_array.vertex_count()))

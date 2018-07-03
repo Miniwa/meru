@@ -61,7 +61,6 @@ class C3bVertexArray:
     def __init__(self):
         self.attributes = []
         self.values = []
-        self.shapes = []
 
     def values_per_vertex(self):
         value_count = 0
@@ -108,8 +107,12 @@ class C3bVertexArray:
     def get_blend_weights(self):
         return self._get_vec4("VERTEX_ATTRIB_BLEND_WEIGHT")
 
-    def get_blend_index(self):
-        return self._get_vec4("VERTEX_ATTRIB_BLEND_INDEX")
+    def get_blend_indices(self):
+        formatted_indices = []
+        for _vec4 in self._get_vec4("VERTEX_ATTRIB_BLEND_INDEX"):
+            formatted_indices.append(Vec4(int(_vec4.x), int(_vec4.y),
+            int(_vec4.z), int(_vec4.w)))
+        return formatted_indices
 
     def _get_vec3(self, attrib_name):
         attrib_vertices = []
@@ -157,8 +160,8 @@ class C3bNode:
 
 
 class C3bNodePart:
-    def __init__(self, shape_id, material_id):
-        self.shape_id = shape_id
+    def __init__(self, mesh_id, material_id):
+        self.mesh_id = mesh_id
         self.material_id = material_id
         self.bones = []
 
@@ -213,11 +216,11 @@ class C3bParser:
             # Read attributes
             attrib_count = self._read_uint()
             for attrib_index in range(attrib_count):
-                nr_values = self._read_uint()
+                value_count = self._read_uint()
                 _type = self._read_string()
                 name = self._read_string()
                 vertex_array.attributes.append(
-                    C3bVertexAttribute(nr_values, _type, name))
+                    C3bVertexAttribute(value_count, _type, name))
 
             # Read vertices
             value_count = self._read_uint()
@@ -291,9 +294,9 @@ class C3bParser:
         node = C3bNode(_id, is_skeleton, transform)
         part_count = self._read_uint()
         for part_index in range(part_count):
-            shape_id = self._read_string()
+            mesh_id = self._read_string()
             material_id = self._read_string()
-            node_part = C3bNodePart(shape_id, material_id)
+            node_part = C3bNodePart(mesh_id, material_id)
 
             bone_count = self._read_uint()
             for bone_index in range(bone_count):
