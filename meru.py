@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import click
-from meru.c3b import C3bParser
+from meru.c3b import C3bParser, MeruSkeleton
 
 
 CONTEXT_SETTINGS = {
@@ -82,7 +82,9 @@ def nodes(filenames):
     for filename in filenames:
         parser = C3bParser.from_file(filename)
         nodes = parser.read_nodes(0)
+        skeleton = MeruSkeleton.from_nodes(nodes)
         print(nodes)
+        print(skeleton)
 
 
 if __name__ == "__main__":

@@ -158,6 +158,48 @@ class C3bNode:
         self.parts = []
         self.children = []
 
+    def get_skeleton(self):
+        assert self.is_skeleton
+
+
+class MeruSkeleton:
+    def __init__(self):
+        self.bones = []
+        self._index = 0
+
+    @classmethod
+    def from_nodes(self, nodes):
+        skeleton_node = self._find_skeleton(nodes)
+        skeleton = MeruSkeleton()
+        skeleton._parse_bone(skeleton_node, None)
+        return skeleton
+
+    @classmethod
+    def _find_skeleton(self, nodes):
+        filtered = list(filter(lambda node: node.is_skeleton, nodes))
+        assert len(filtered) == 1
+        return filtered[0]
+
+    def _parse_bone(self, node, parent):
+        bone = MeruBone(node.id, self._next_index(), node.transform, parent)
+        self.bones.append(bone)
+        for child in node.children:
+            self._parse_bone(child, bone)
+        return bone
+
+    def _next_index(self):
+        index = self._index
+        self._index += 1
+        return index
+
+
+class MeruBone:
+    def __init__(self, _id, index, transform, parent=None):
+        self.id = _id
+        self.index = index
+        self.transform = transform
+        self.parent = parent
+
 
 class C3bNodePart:
     def __init__(self, mesh_id, material_id):

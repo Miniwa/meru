@@ -1,5 +1,5 @@
 from inc_noesis import *
-from meru.c3b import C3bParser
+from meru.c3b import C3bParser, MeruSkeleton
 
 
 def registerNoesisTypes():
@@ -20,6 +20,20 @@ def c3b_to_vec3(_vec):
 
 def c3b_to_vec4(_vec):
     return NoeVec4(_vec.unpack())
+
+
+def c3b_to_mat44(_mat):
+    return NoeMat44(_mat.unpack())
+
+
+def c3b_to_bone(_bone):
+    bone = NoeBone()
+    bone.index = _bone.index
+    bone.name = _bone.id
+    if _bone.parent is not None:
+        bone.parent_index = _bone.parent.index
+        bone.parent_name = _bone.parent.id
+    return bone
 
 
 def c3b_check_type(data):
@@ -58,7 +72,18 @@ def c3b_load_model(data, models):
                 NoeVertWeight(_index.unpack(), _weight.unpack()))
         meshes.append(mesh)
 
+    print("Reading nodes..")
+    _nodes = parser.read_nodes(0)
+
+    print("Building skeleton..")
+    skeleton = MeruSkeleton.from_nodes(_nodes)
+
+    print("Building bone list..")
+    bones = []
+    for _bone in skeleton.bones:
+        bones.append(c3b_to_bone(_bone))
+
     print("Creating model..")
-    model = NoeModel(meshes)
+    model = NoeModel(meshes, bones=bones)
     models.append(model)
     return 1
