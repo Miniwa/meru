@@ -38,6 +38,9 @@ class Mat:
         offset = x * self.__class__.COLUMN_COUNT
         return self.values[offset + y]
 
+    def unpack(self):
+        return (self.values)
+
 
 class Mat44(Mat):
     ROW_COUNT = 4
