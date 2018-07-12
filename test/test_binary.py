@@ -1,7 +1,8 @@
 import struct
 import sys
 import pytest
-from meru.binary import Endian, parse_int32, parse_uint32, BinaryReader
+from meru.binary import (Endian, parse_int32, parse_uint32, dump_int32,
+dump_uint32, BinaryReader, BinaryStream)
 
 
 _int = -255
@@ -44,36 +45,61 @@ class TestParse:
         assert parse_uint32(_uint_bytes_big, Endian.BIG) == _uint
 
 
-class TestBinaryReader:
+class TestDump:
+    def test_dump_int32(self):
+        assert dump_int32(_int) == _int_bytes
+
+    def test_dump_int32_little(self):
+        assert dump_int32(_int, Endian.LITTLE) == _int_bytes_little
+
+    def test_dump_int32_big(self):
+        assert dump_int32(_int, Endian.BIG) == _int_bytes_big
+
+    def test_dump_uint32(self):
+        assert dump_uint32(_uint) == _uint_bytes
+
+    def test_dump_uint32_little(self):
+        assert dump_uint32(_uint, Endian.LITTLE) == _uint_bytes_little
+
+    def test_dump_uint32_big(self):
+        assert dump_uint32(_uint, Endian.BIG) == _uint_bytes_big
+
+
+class TestBinaryStream:
     def setup_method(self):
-        self._reader = BinaryReader(bytes(10))
+        self._stream = BinaryStream(bytes(10))
 
     def test_length(self):
-        assert self._reader.length() == 10
+        assert self._stream.length() == 10
 
     def test_pos(self):
-        assert self._reader.pos() == 0
+        assert self._stream.pos() == 0
 
     def test_remaining(self):
-        assert self._reader.remaining() == 10
+        assert self._stream.remaining() == 10
 
     def test_seek(self):
-        self._reader.seek(5)
-        assert self._reader.pos() == 5
-        assert self._reader.remaining() == 5
+        self._stream.seek(5)
+        assert self._stream.pos() == 5
+        assert self._stream.remaining() == 5
 
     def test_move(self):
-        self._reader.move(2)
-        assert self._reader.pos() == 2
+        self._stream.move(2)
+        assert self._stream.pos() == 2
 
-        self._reader.move(-2)
-        assert self._reader.pos() == 0
+        self._stream.move(-2)
+        assert self._stream.pos() == 0
 
     def test_seek_throws_on_invalid_index(self):
         with pytest.raises(IndexError):
-            self._reader.seek(-1)
+            self._stream.seek(-1)
         with pytest.raises(IndexError):
-            self._reader.seek(11)
+            self._stream.seek(11)
+
+
+class TestBinaryReader:
+    def setup_method(self):
+        self._reader = BinaryReader(bytes(10))
 
     def test_read(self):
         _bytes = self._reader.read(4)

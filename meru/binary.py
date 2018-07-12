@@ -29,6 +29,14 @@ def parse_from_format(frmt, _bytes, endianess=None):
     return struct.unpack(combined_format, _bytes)[0]
 
 
+def dump_from_format(frmt, value, endianess=None):
+    if endianess is None:
+        endianess = Endian.native()
+    endian_str = "<" if endianess == Endian.LITTLE else ">"
+    combined_format = endian_str + frmt
+    return struct.pack(combined_format, value)
+
+
 INT8_FORMAT = "b"
 INT16_FORMAT = "h"
 INT32_FORMAT = "i"
@@ -87,28 +95,76 @@ def parse_bool(byte):
     return parse_uint8(byte) != 0
 
 
-class BinaryReader:
+def dump_int8(value):
+    return dump_from_format(INT8_FORMAT, value, None)
+
+
+def dump_int16(value, endianness=None):
+    return dump_from_format(INT16_FORMAT, value, endianness)
+
+
+def dump_int32(value, endianness=None):
+    return dump_from_format(INT32_FORMAT, value, endianness)
+
+
+def dump_int64(value, endianness=None):
+    return dump_from_format(INT64_FORMAT, value, endianness)
+
+
+def dump_uint8(value):
+    return dump_from_format(UINT8_FORMAT, value, None)
+
+
+def dump_uint16(value, endianness=None):
+    return dump_from_format(UINT16_FORMAT, value, endianness)
+
+
+def dump_uint32(value, endianness=None):
+    return dump_from_format(UINT32_FORMAT, value, endianness)
+
+
+def dump_uint64(value, endianness=None):
+    return dump_from_format(UINT64_FORMAT, value, endianness)
+
+
+def dump_float32(value, endianness=None):
+    return dump_from_format(FLOAT32_FORMAT, value, endianness)
+
+
+def dump_float64(value, endianness=None):
+    return dump_from_format(FLOAT64_FORMAT, value, endianness)
+
+
+def dump_bool(value):
+    return dump_uint8(int(value))
+
+
+class BinaryStream:
     def __init__(self, _bytes):
         self._bytes = _bytes
         self._index = 0
-        self._length = len(_bytes)
 
     def length(self):
-        return self._length
+        return len(self._bytes)
 
     def pos(self):
         return self._index
 
     def remaining(self):
-        return self._length - self._index
+        return self.length() - self._index
 
     def seek(self, index):
-        if index < 0 or index > self._length:
+        if index < 0 or index > self.length():
             raise IndexError("Index out of bounds.")
         self._index = index
 
     def move(self, offset):
         self.seek(self._index + offset)
+
+
+class BinaryReader(BinaryStream):
+    def __init__(self, _bytes):
+        super().__init__(_bytes)
 
     def read(self, count):
         to_read = min(count, self.remaining())
