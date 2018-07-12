@@ -214,6 +214,39 @@ class C3bBone:
         self.inv_bind_pos = inv_bind_pos
 
 
+class C3bAnimFlag:
+    HAS_ROTATION = (1 << 0)
+    HAS_SCALE = (1 << 1)
+    HAS_TRANSLATION = (1 << 2)
+
+
+class C3bAnimation:
+    def __init__(self, _id, total_time):
+        self.id = _id
+        self.total_time = total_time
+        self._bones = {}
+
+    def get_bones(self):
+        return list(self._bones.keys())
+
+    def add_keyframe(self, bone_id, keyframe):
+        if bone_id not in self._bones:
+            self._bones[bone_id] = []
+        self._bones[bone_id].append(keyframe)
+
+    def get_keyframes(self, bone_id):
+        assert bone_id in self._bones
+        return self._bones[bone_id]
+
+
+class C3bAnimKeyFrame:
+    def __init__(self, time, scale=None, rotation=None, translation=None):
+        self.time = time
+        self.scale = scale
+        self.rotation = rotation
+        self.translation = translation
+
+
 class C3bParser:
     def __init__(self, _bytes):
         self._reader = BinaryReader(_bytes)
@@ -361,6 +394,36 @@ class C3bParser:
             node.children.append(child)
         return node
 
+    def read_animations(self, index):
+        self.seek_type(C3bType.ANIMATIONS, index)
+        _id = self._read_string()
+        total_time = self._reader.read_float32(self.endianness)
+        anim = C3bAnimation(_id, total_time)
+
+        bone_node_count = self._read_uint()
+        for bone_node_index in range(bone_node_count):
+            bone_name = self._read_string()
+            keyframe_count = self._read_uint()
+
+            for keyframe_index in range(keyframe_count):
+                keyframe_time = self._reader.read_float32(self.endianness)
+                keyframe_flag = self._reader.read_uint8(self.endianness)
+                keyframe = C3bAnimKeyFrame(keyframe_time)
+
+                if ((keyframe_flag & C3bAnimFlag.HAS_ROTATION) ==
+                C3bAnimFlag.HAS_ROTATION):
+                    keyframe.rotation = self._read_vec4()
+
+                if ((keyframe_flag & C3bAnimFlag.HAS_SCALE) ==
+                C3bAnimFlag.HAS_SCALE):
+                    keyframe.scale = self._read_vec3()
+
+                if ((keyframe_flag & C3bAnimFlag.HAS_TRANSLATION) ==
+                C3bAnimFlag.HAS_TRANSLATION):
+                    keyframe.translation = self._read_vec3()
+                anim.add_keyframe(bone_name, keyframe)
+        return anim
+
     def seek_type(self, _type, index):
         refs = self.read_header().references
         filtered = list(filter(lambda ref: ref.type == _type, refs))
@@ -383,3 +446,15 @@ class C3bParser:
         for i in range(16):
             values.append(self._reader.read_float32(self.endianness))
         return Mat44(values)
+
+    def _read_vec3(self):
+        values = []
+        for i in range(3):
+            values.append(self._reader.read_float32(self.endianness))
+        return Vec3(values[0], values[1], values[2])
+
+    def _read_vec4(self):
+        values = []
+        for i in range(4):
+            values.append(self._reader.read_float32(self.endianness))
+        return Vec4(values[0], values[1], values[2], values[3])

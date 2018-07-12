@@ -87,5 +87,14 @@ def nodes(filenames):
         print(skeleton)
 
 
+@main.command()
+@click.argument("filenames", type=click.Path(exists=True), nargs=-1)
+def animations(filenames):
+    for filename in filenames:
+        parser = C3bParser.from_file(filename)
+        animations = parser.read_animations(0)
+        print(animations)
+
+
 if __name__ == "__main__":
     main()
