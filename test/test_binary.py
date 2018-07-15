@@ -2,7 +2,7 @@ import struct
 import sys
 import pytest
 from meru.binary import (Endian, parse_int32, parse_uint32, dump_int32,
-dump_uint32, BinaryReader, BinaryStream)
+dump_uint32, BinaryStream, BinaryReader, BinaryWriter)
 
 
 _int = -255
@@ -145,3 +145,58 @@ class TestBinaryReader:
     def test_read_string(self):
         reader = BinaryReader(b"Hello")
         assert reader.read_string(5) == "Hello"
+
+
+class TestBinaryWriter:
+    def setup_method(self):
+        self.writer = BinaryWriter(Endian.native())
+        self.little_writer = BinaryWriter(Endian.LITTLE)
+        self.big_writer = BinaryWriter(Endian.BIG)
+
+    def test_write_bytes(self):
+        self.writer.write_bytes(bytes(4))
+        assert self.writer.length() == 4
+        assert self.writer.pos() == 4
+
+    def test_write_bytes_out_of_position(self):
+        self.writer.write_bytes(bytes(10))
+        assert self.writer.length() == 10
+        assert self.writer.pos() == 10
+
+        self.writer.seek(8)
+        self.writer.write_bytes(bytes(4))
+        assert self.writer.length() == 12
+        assert self.writer.pos() == 12
+
+    def test_write_int32(self):
+        self.writer.write_int32(_int)
+        assert self.writer.to_bytes() == _int_bytes
+
+    def test_write_int32_little(self):
+        self.little_writer.write_int32(_int)
+        assert self.little_writer.to_bytes() == _int_bytes_little
+
+    def test_write_int32_big(self):
+        self.big_writer.write_int32(_int)
+        assert self.big_writer.to_bytes() == _int_bytes_big
+
+    def test_write_uint32(self):
+        self.writer.write_uint32(_uint)
+        assert self.writer.to_bytes() == _uint_bytes
+
+    def test_write_uint32_little(self):
+        self.little_writer.write_uint32(_uint)
+        assert self.little_writer.to_bytes() == _uint_bytes_little
+
+    def test_write_uint32_big(self):
+        self.big_writer.write_uint32(_uint)
+        assert self.big_writer.to_bytes() == _uint_bytes_big
+
+    def test_write_string(self):
+        self.writer.write_string("Hello")
+        assert self.writer.to_bytes() == b"Hello"
+
+    def test_write_string_uint32(self):
+        self.writer.write_string_uint32("Hello")
+        reader = BinaryReader(self.writer.to_bytes())
+        assert reader.read_prefixed_string_uint32() == "Hello"

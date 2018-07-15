@@ -171,7 +171,7 @@ class BinaryReader(BinaryStream):
         if to_read == 0:
             return bytes()
         else:
-            _read = self._bytes[self._index:self._index + to_read]
+            _read = self._bytes[self.pos():self.pos() + to_read]
             self.move(to_read)
             return _read
 
@@ -291,3 +291,136 @@ class BinaryReader(BinaryStream):
     def _read_prefixed_string(self, read_func, endianness, encoding):
         length = read_func(endianness)
         return self.read_string(length, encoding)
+
+
+class BinaryWriter(BinaryStream):
+    def __init__(self, endianness=Endian.native()):
+        self.endianness = endianness
+        super().__init__(bytes())
+
+    def _to_collection(self, value):
+        if isinstance(value, (list, tuple)):
+            return value
+        else:
+            return tuple([value])
+
+    def to_bytes(self):
+        return self._bytes
+
+    def write_bytes(self, _bytes):
+        prefix_bytes = self._bytes[:self.pos()]
+        suffix_bytes = self._bytes[self.pos() + len(_bytes):]
+        self._bytes = prefix_bytes + _bytes + suffix_bytes
+        self.move(len(_bytes))
+
+    def write_int8(self, numbers):
+        self._write_non_endian_values(numbers, dump_int8)
+
+    def write_int16(self, numbers):
+        self._write_values(numbers, dump_int16)
+
+    def write_int32(self, numbers):
+        self._write_values(numbers, dump_int32)
+
+    def write_int64(self, numbers):
+        self._write_values(numbers, dump_int64)
+
+    def write_uint8(self, numbers):
+        self._write_non_endian_values(numbers, dump_uint8)
+
+    def write_uint16(self, numbers):
+        self._write_values(numbers, dump_uint16)
+
+    def write_uint32(self, numbers):
+        self._write_values(numbers, dump_uint32)
+
+    def write_uint64(self, numbers):
+        self._write_values(numbers, dump_uint64)
+
+    def write_float32(self, numbers):
+        self._write_values(numbers, dump_float32)
+
+    def write_float64(self, numbers):
+        self._write_values(numbers, dump_float64)
+
+    def write_bool(self, values):
+        self._write_non_endian_values(values, dump_bool)
+
+    def _write_non_endian_values(self, values, dump_func):
+        converted_values = self._to_collection(values)
+        for value in converted_values:
+            self.write_bytes(dump_func(value))
+
+    def _write_values(self, values, dump_func):
+        converted_values = self._to_collection(values)
+        print(converted_values)
+        for value in converted_values:
+            self.write_bytes(dump_func(value, self.endianness))
+
+    def write_bytes_int8(self, bytes_collection):
+        self._write_prefixed_bytes(bytes_collection, self.write_int8)
+
+    def write_bytes_int16(self, bytes_collection):
+        self._write_prefixed_bytes(bytes_collection, self.write_int16)
+
+    def write_bytes_int32(self, bytes_collection):
+        self._write_prefixed_bytes(bytes_collection, self.write_int32)
+
+    def write_bytes_int64(self, bytes_collection):
+        self._write_prefixed_bytes(bytes_collection, self.write_int64)
+
+    def write_bytes_uint8(self, bytes_collection):
+        self._write_prefixed_bytes(bytes_collection, self.write_uint8)
+
+    def write_bytes_uint16(self, bytes_collection):
+        self._write_prefixed_bytes(bytes_collection, self.write_uint16)
+
+    def write_bytes_uint32(self, bytes_collection):
+        self._write_prefixed_bytes(bytes_collection, self.write_uint32)
+
+    def write_bytes_uint64(self, bytes_collection):
+        self._write_prefixed_bytes(bytes_collection, self.write_uint64)
+
+    def _write_prefixed_bytes(self, bytes_collection, write_func):
+        converted_bytes = self._to_collection(bytes_collection)
+        for _bytes in converted_bytes:
+            write_func(len(_bytes))
+            self.write_bytes(_bytes)
+
+    def write_string(self, strings, encoding="utf-8"):
+        converted_strings = self._to_collection(strings)
+        for _string in converted_strings:
+            self.write_bytes(_string.encode(encoding=encoding))
+
+    def write_string_int8(self, strings, encoding="utf-8"):
+        self._write_prefixed_strings(strings, self.write_bytes_int8, encoding)
+
+    def write_string_int16(self, strings, encoding="utf-8"):
+        self._write_prefixed_strings(strings, self.write_bytes_int16, encoding)
+
+    def write_string_int32(self, strings, encoding="utf-8"):
+        self._write_prefixed_strings(strings, self.write_bytes_int32, encoding)
+
+    def write_string_int64(self, strings, encoding="utf-8"):
+        self._write_prefixed_strings(strings, self.write_bytes_int64, encoding)
+
+    def write_string_uint8(self, strings, encoding="utf-8"):
+        self._write_prefixed_strings(strings, self.write_bytes_uint8, encoding)
+
+    def write_string_uint16(self, strings, encoding="utf-8"):
+        self._write_prefixed_strings(strings, self.write_bytes_uint16,
+            encoding)
+
+    def write_string_uint32(self, strings, encoding="utf-8"):
+        self._write_prefixed_strings(strings, self.write_bytes_uint32,
+            encoding)
+
+    def write_string_uint64(self, strings, encoding="utf-8"):
+        self._write_prefixed_strings(strings, self.write_bytes_uint64,
+            encoding)
+
+    def _write_prefixed_strings(self, strings, write_prefixed_func,
+    encoding="utf-8"):
+        converted_strings = self._to_collection(strings)
+        for _string in converted_strings:
+            write_prefixed_func(_string.encode(encoding=encoding))
